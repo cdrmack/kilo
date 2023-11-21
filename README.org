@@ -1,0 +1,1 @@
+Simple text editor written in C. Based on the [[https://github.com/antirez/kilo/tree/master][Kilo]] and [[https://viewsourcecode.org/snaptoken/kilo/][Build Your Own Text Editor]].
