@@ -1,7 +1,18 @@
+#include <termios.h>
 #include <unistd.h>
+
+void enable_raw_mode()
+{
+    struct termios raw;
+    tcgetattr(STDIN_FILENO, &raw);
+    raw.c_lflag &= ~(ECHO); // bitwise-NOT and bitwise-AND
+    tcsetattr(STDIN_FILENO, TCSAFLUSH, &raw);
+}
 
 int main()
 {
+    enable_raw_mode();
+
     char c;
     while (read(STDIN_FILENO, &c, 1) == 1 && c != 'q')
     {
