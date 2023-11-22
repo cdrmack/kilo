@@ -1,3 +1,5 @@
+#include <ctype.h>
+#include <stdio.h>
 #include <stdlib.h>
 #include <termios.h>
 #include <unistd.h>
@@ -6,30 +8,39 @@ struct termios original_termios;
 
 // there are two general kinds of input processing:
 // canonical (cooked) and noncanonical (raw)
-void disable_raw_mode()
+void disable_raw_mode(void)
 {
     tcsetattr(STDIN_FILENO, TCSAFLUSH, &original_termios);
 }
 
-void enable_raw_mode()
+// disable echoing and canonicalize input lines (input bytes are not assembled into lines)
+// termios(4)
+void enable_raw_mode(void)
 {
     tcgetattr(STDIN_FILENO, &original_termios);
     atexit(disable_raw_mode);
 
     struct termios raw_termios = original_termios;
-    raw_termios.c_lflag &= ~(ECHO); // bitwise-NOT and bitwise-AND
+    raw_termios.c_lflag &= ~(ECHO | ICANON); // bitwise-NOT and bitwise-AND
     tcsetattr(STDIN_FILENO, TCSAFLUSH, &raw_termios);
 }
 
-int main()
+int main(void)
 {
     enable_raw_mode();
 
     char c;
     while (read(STDIN_FILENO, &c, 1) == 1 && c != 'q')
     {
-        // TODO
+        if (iscntrl(c))
+        {
+            printf("%d\n", c);
+        }
+        else
+        {
+            printf("%d ('%c')\n", c, c);
+        }
     }
 
-    return 0;
+    return EXIT_SUCCESS;
 }
