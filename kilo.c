@@ -23,6 +23,7 @@ void enable_raw_mode(void)
 
     struct termios raw_termios = original_termios;
     raw_termios.c_lflag &= ~(ECHO | ICANON | ISIG); // bitwise-NOT and bitwise-AND
+    raw_termios.c_iflag &= ~(IXON);
     tcsetattr(STDIN_FILENO, TCSAFLUSH, &raw_termios);
 }
 
