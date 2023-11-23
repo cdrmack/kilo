@@ -1,6 +1,7 @@
 #include <ctype.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <sys/termios.h>
 #include <termios.h>
 #include <unistd.h>
 
@@ -21,7 +22,7 @@ void enable_raw_mode(void)
     atexit(disable_raw_mode);
 
     struct termios raw_termios = original_termios;
-    raw_termios.c_lflag &= ~(ECHO | ICANON); // bitwise-NOT and bitwise-AND
+    raw_termios.c_lflag &= ~(ECHO | ICANON | ISIG); // bitwise-NOT and bitwise-AND
     tcsetattr(STDIN_FILENO, TCSAFLUSH, &raw_termios);
 }
 
