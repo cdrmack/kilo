@@ -23,8 +23,9 @@ void enable_raw_mode(void)
     atexit(disable_raw_mode);
 
     struct termios raw_termios = original_termios;
-    raw_termios.c_lflag &= ~(ECHO | ICANON | IEXTEN | ISIG); // bitwise-NOT and bitwise-AND
     raw_termios.c_iflag &= ~(ICRNL | IXON);
+    raw_termios.c_oflag &= ~(OPOST);
+    raw_termios.c_lflag &= ~(ECHO | ICANON | IEXTEN | ISIG); // bitwise-NOT and bitwise-AND
     tcsetattr(STDIN_FILENO, TCSAFLUSH, &raw_termios);
 }
 
