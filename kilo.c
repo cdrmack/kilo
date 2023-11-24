@@ -14,7 +14,8 @@ void disable_raw_mode(void)
     tcsetattr(STDIN_FILENO, TCSAFLUSH, &original_termios);
 }
 
-// disable echoing and canonicalize input lines (input bytes are not assembled into lines)
+// disable echoing and some signals
+// canonicalize input lines (input bytes are not assembled into lines)
 // termios(4)
 void enable_raw_mode(void)
 {
@@ -23,7 +24,7 @@ void enable_raw_mode(void)
 
     struct termios raw_termios = original_termios;
     raw_termios.c_lflag &= ~(ECHO | ICANON | IEXTEN | ISIG); // bitwise-NOT and bitwise-AND
-    raw_termios.c_iflag &= ~(IXON);
+    raw_termios.c_iflag &= ~(ICRNL | IXON);
     tcsetattr(STDIN_FILENO, TCSAFLUSH, &raw_termios);
 }
 
