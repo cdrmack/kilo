@@ -27,6 +27,8 @@ void enable_raw_mode(void)
     raw_termios.c_oflag &= ~(OPOST);
     raw_termios.c_cflag |= ~(CS8);
     raw_termios.c_lflag &= ~(ECHO | ICANON | IEXTEN | ISIG); // bitwise-NOT and bitwise-AND
+    raw_termios.c_cc[VMIN] = 0; // minimum number of bytes of input needed before `read()` can return
+    raw_termios.c_cc[VTIME] = 1; // maximum amount of time (in 1/10 of second) to wait before `read()` returns, 100ms
 
     tcsetattr(STDIN_FILENO, TCSAFLUSH, &raw_termios);
 }
@@ -35,9 +37,12 @@ int main(void)
 {
     enable_raw_mode();
 
-    char c;
-    while (read(STDIN_FILENO, &c, 1) == 1 && c != 'q')
+    char c = '\0';
+    while (1)
     {
+        c = '\0';
+        read(STDIN_FILENO, &c, 1);
+
         if (iscntrl(c))
         {
             printf("%d\r\n", c);
@@ -45,6 +50,11 @@ int main(void)
         else
         {
             printf("%d ('%c')\r\n", c, c);
+        }
+
+        if (c == 'q')
+        {
+            break;
         }
     }
 
