@@ -1,17 +1,28 @@
 #include <ctype.h>
+#include <errno.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <sys/termios.h>
 #include <termios.h>
 #include <unistd.h>
 
+// DATA
 struct termios original_termios;
+
+// TERMINAL
+void die(const char* s)
+{
+    perror(s); // most clib function that fail will set the global errno variable, perror() prints it alongside provided text
+    exit(EXIT_FAILURE);
+}
 
 // there are two general kinds of input processing:
 // canonical (cooked) and noncanonical (raw)
 void disable_raw_mode(void)
 {
-    tcsetattr(STDIN_FILENO, TCSAFLUSH, &original_termios);
+    if (tcsetattr(STDIN_FILENO, TCSAFLUSH, &original_termios) == -1)
+    {
+        die("tcsetattr");
+    }
 }
 
 // disable echoing and some signals
@@ -19,7 +30,11 @@ void disable_raw_mode(void)
 // termios(4)
 void enable_raw_mode(void)
 {
-    tcgetattr(STDIN_FILENO, &original_termios);
+    if (tcgetattr(STDIN_FILENO, &original_termios) == -1)
+    {
+        die("tcgetattr");
+    }
+
     atexit(disable_raw_mode);
 
     struct termios raw_termios = original_termios;
@@ -30,7 +45,10 @@ void enable_raw_mode(void)
     raw_termios.c_cc[VMIN] = 0; // minimum number of bytes of input needed before `read()` can return
     raw_termios.c_cc[VTIME] = 1; // maximum amount of time (in 1/10 of second) to wait before `read()` returns, 100ms
 
-    tcsetattr(STDIN_FILENO, TCSAFLUSH, &raw_termios);
+    if (tcsetattr(STDIN_FILENO, TCSAFLUSH, &raw_termios) == -1)
+    {
+        die("tcsetattr");
+    }
 }
 
 int main(void)
@@ -41,7 +59,10 @@ int main(void)
     while (1)
     {
         c = '\0';
-        read(STDIN_FILENO, &c, 1);
+        if (read(STDIN_FILENO, &c, 1) == -1)
+        {
+            die("read");
+        }
 
         if (iscntrl(c))
         {
