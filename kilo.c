@@ -5,6 +5,9 @@
 #include <termios.h>
 #include <unistd.h>
 
+// DEFINES
+#define CTRL_KEY(k) ((k) & 0x1f) // 0001 1111
+
 // DATA
 struct termios original_termios;
 
@@ -73,7 +76,7 @@ int main(void)
             printf("%d ('%c')\r\n", c, c);
         }
 
-        if (c == 'q')
+        if (c == CTRL_KEY('q'))
         {
             break;
         }
