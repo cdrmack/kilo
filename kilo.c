@@ -54,32 +54,45 @@ void enable_raw_mode(void)
     }
 }
 
+char editor_read_key()
+{
+    ssize_t nread = 0;
+    char c = '\0';
+
+    while((nread = read(STDIN_FILENO, &c, 1)) != 1)
+    {
+        if (nread == -1 && errno != EAGAIN)
+        {
+            die("read");
+        }
+    }
+
+    return c;
+}
+
+void editor_process_keypress()
+{
+    const char key = editor_read_key();
+
+    switch (key)
+    {
+        case CTRL_KEY('q'):
+        {
+            exit(EXIT_SUCCESS);
+            break;
+        }
+        default:
+            break;
+    }
+}
+
 int main(void)
 {
     enable_raw_mode();
 
-    char c = '\0';
     while (1)
     {
-        c = '\0';
-        if (read(STDIN_FILENO, &c, 1) == -1)
-        {
-            die("read");
-        }
-
-        if (iscntrl(c))
-        {
-            printf("%d\r\n", c);
-        }
-        else
-        {
-            printf("%d ('%c')\r\n", c, c);
-        }
-
-        if (c == CTRL_KEY('q'))
-        {
-            break;
-        }
+        editor_process_keypress();
     }
 
     return EXIT_SUCCESS;
