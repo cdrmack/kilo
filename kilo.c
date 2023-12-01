@@ -5,13 +5,13 @@
 #include <termios.h>
 #include <unistd.h>
 
-// DEFINES
+/*** DEFINES ***/
 #define CTRL_KEY(k) ((k) & 0x1f) // 0001 1111
 
-// DATA
+/*** DATA ***/
 struct termios original_termios;
 
-// TERMINAL
+/*** TERMINAL ***/
 void die(const char* s)
 {
     perror(s); // most clib function that fail will set the global errno variable, perror() prints it alongside provided text
@@ -70,6 +70,24 @@ char editor_read_key()
     return c;
 }
 
+/*** OUTPUT ***/
+void editor_refresh_screen()
+{
+    // first byte - `\x1b` - is an escape character (27)
+    // escape sequence starts with an escape character followed by a '[' character
+    // --
+    // https://vt100.net/docs/vt100-ug/chapter3.html#ED
+    // `ESC [ Ps J` - erase some or all of the characters in the display
+    // Ps = 0, erase from the active position to the end of the screen (inclusive)
+    // Ps = 1, erase from the start of the screen to the active position (inclusive)
+    // PS = 2, erase all of the display (all lines are erased, changed to single-width, and the cursor does not move)
+    // --
+    // we could use ncurses lib, which uses terminfo db to figure out the capabilities of a terminal and what escape sequences to use
+    // if we wanted to support more terminals, not only VT100
+    write(STDOUT_FILENO, "\x1b[2J", 4);
+}
+
+/*** INPUT ***/
 void editor_process_keypress()
 {
     const char key = editor_read_key();
@@ -86,12 +104,14 @@ void editor_process_keypress()
     }
 }
 
+/*** INIT ***/
 int main(void)
 {
     enable_raw_mode();
 
     while (1)
     {
+        editor_refresh_screen();
         editor_process_keypress();
     }
 
