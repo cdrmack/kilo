@@ -85,6 +85,7 @@ void editor_refresh_screen()
     // we could use ncurses lib, which uses terminfo db to figure out the capabilities of a terminal and what escape sequences to use
     // if we wanted to support more terminals, not only VT100
     write(STDOUT_FILENO, "\x1b[2J", 4);
+    write(STDOUT_FILENO, "\x1b[H", 3); // move cursor to the top-left corner (home position)
 }
 
 /*** INPUT ***/
