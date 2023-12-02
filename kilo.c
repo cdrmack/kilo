@@ -14,6 +14,9 @@ struct termios original_termios;
 /*** TERMINAL ***/
 void die(const char* s)
 {
+    write(STDOUT_FILENO, "\x1b[2J", 4);
+    write(STDOUT_FILENO, "\x1b[H", 3);
+
     perror(s); // most clib function that fail will set the global errno variable, perror() prints it alongside provided text
     exit(EXIT_FAILURE);
 }
@@ -97,6 +100,8 @@ void editor_process_keypress()
     {
         case CTRL_KEY('q'):
         {
+            write(STDOUT_FILENO, "\x1b[2J", 4);
+            write(STDOUT_FILENO, "\x1b[H", 3);
             exit(EXIT_SUCCESS);
             break;
         }
