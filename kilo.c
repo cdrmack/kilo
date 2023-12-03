@@ -2,6 +2,7 @@
 #include <errno.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <sys/_types/_size_t.h>
 #include <termios.h>
 #include <unistd.h>
 
@@ -74,6 +75,14 @@ char editor_read_key()
 }
 
 /*** OUTPUT ***/
+void editor_draw_rows()
+{
+    for (size_t y = 0; y < 24; ++y)
+    {
+        write(STDOUT_FILENO, "~\r\n", 3);
+    }
+}
+
 void editor_refresh_screen()
 {
     // first byte - `\x1b` - is an escape character (27)
@@ -89,6 +98,9 @@ void editor_refresh_screen()
     // if we wanted to support more terminals, not only VT100
     write(STDOUT_FILENO, "\x1b[2J", 4);
     write(STDOUT_FILENO, "\x1b[H", 3); // move cursor to the top-left corner (home position)
+
+    editor_draw_rows();
+    write(STDOUT_FILENO, "\x1b[H", 3);
 }
 
 /*** INPUT ***/
