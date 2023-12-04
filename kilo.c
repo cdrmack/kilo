@@ -10,7 +10,11 @@
 #define CTRL_KEY(k) ((k) & 0x1f) // 0001 1111
 
 /*** DATA ***/
-struct termios original_termios;
+struct editor_config {
+    struct termios original_termios;
+};
+
+struct editor_config EDITOR_CONF;
 
 /*** TERMINAL ***/
 void die(const char* s)
@@ -26,7 +30,7 @@ void die(const char* s)
 // canonical (cooked) and noncanonical (raw)
 void disable_raw_mode(void)
 {
-    if (tcsetattr(STDIN_FILENO, TCSAFLUSH, &original_termios) == -1)
+    if (tcsetattr(STDIN_FILENO, TCSAFLUSH, &EDITOR_CONF.original_termios) == -1)
     {
         die("tcsetattr");
     }
@@ -37,14 +41,14 @@ void disable_raw_mode(void)
 // termios(4)
 void enable_raw_mode(void)
 {
-    if (tcgetattr(STDIN_FILENO, &original_termios) == -1)
+    if (tcgetattr(STDIN_FILENO, &EDITOR_CONF.original_termios) == -1)
     {
         die("tcgetattr");
     }
 
     atexit(disable_raw_mode);
 
-    struct termios raw_termios = original_termios;
+    struct termios raw_termios = EDITOR_CONF.original_termios;
     raw_termios.c_iflag &= ~(BRKINT | ICRNL | INPCK | ISTRIP | IXON);
     raw_termios.c_oflag &= ~(OPOST);
     raw_termios.c_cflag |= ~(CS8);
