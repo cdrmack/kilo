@@ -2,7 +2,7 @@
 #include <errno.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <sys/_types/_size_t.h>
+#include <sys/ioctl.h>
 #include <termios.h>
 #include <unistd.h>
 
@@ -11,6 +11,8 @@
 
 /*** DATA ***/
 struct editor_config {
+    int screenrows;
+    int screencols;
     struct termios original_termios;
 };
 
@@ -78,10 +80,26 @@ char editor_read_key()
     return c;
 }
 
+int get_window_size(int* rows, int* cols)
+{
+    struct winsize ws;
+
+    if (ioctl(STDOUT_FILENO, TIOCGWINSZ, &ws) == -1 || ws.ws_col == 0)
+    {
+        return -1;
+    }
+    else
+    {
+        *rows = ws.ws_row;
+        *cols = ws.ws_col;
+        return 0;
+    }
+}
+
 /*** OUTPUT ***/
 void editor_draw_rows()
 {
-    for (size_t y = 0; y < 24; ++y)
+    for (int y = 0; y < EDITOR_CONF.screenrows; ++y)
     {
         write(STDOUT_FILENO, "~\r\n", 3);
     }
@@ -127,9 +145,18 @@ void editor_process_keypress()
 }
 
 /*** INIT ***/
+void init_editor()
+{
+    if (get_window_size(&EDITOR_CONF.screenrows, &EDITOR_CONF.screencols) == -1)
+    {
+        die("get_window_size");
+    }
+}
+
 int main(void)
 {
     enable_raw_mode();
+    init_editor();
 
     while (1)
     {
