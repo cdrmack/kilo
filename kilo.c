@@ -101,7 +101,12 @@ void editor_draw_rows()
 {
     for (int y = 0; y < EDITOR_CONF.screenrows; ++y)
     {
-        write(STDOUT_FILENO, "~\r\n", 3);
+        write(STDOUT_FILENO, "~", 1);
+
+        if (y < EDITOR_CONF.screenrows - 1)
+        {
+            write(STDOUT_FILENO, "\r\n", 2);
+        }
     }
 }
 
