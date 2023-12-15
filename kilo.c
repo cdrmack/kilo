@@ -140,6 +140,10 @@ void editor_draw_rows(struct append_buf *ab)
 void editor_refresh_screen()
 {
     struct append_buf ab = { nullptr, 0 };
+
+    // hide cursor while refreshing
+    ab_append(&ab, "\x1b[?25l", 6);
+
     // first byte - `\x1b` - is an escape character (27)
     // escape sequence starts with an escape character followed by a '[' character
     // --
@@ -157,6 +161,9 @@ void editor_refresh_screen()
     editor_draw_rows(&ab);
 
     ab_append(&ab, "\x1b[H", 3);
+
+    // show cursor
+    ab_append(&ab, "\x1b[?25h", 6);
 
     write(STDOUT_FILENO, ab.b, ab.len);
     ab_free(&ab);
