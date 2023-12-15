@@ -130,6 +130,9 @@ void editor_draw_rows(struct append_buf *ab)
     {
         ab_append(ab, "~", 1);
 
+        // erase from the active position to the end of the line
+        ab_append(ab, "\x1b[K", 3);
+
         if (y < EDITOR_CONF.screenrows - 1)
         {
             ab_append(ab, "\r\n", 2);
@@ -137,6 +140,12 @@ void editor_draw_rows(struct append_buf *ab)
     }
 }
 
+// first byte - `\x1b` - is an escape character (27)
+// escape sequence starts with an escape character followed by a '[' character
+// https://vt100.net/docs/vt100-ug/chapter3.html#ED
+// ---
+// we could use ncurses lib, which uses terminfo db to figure out the capabilities of a terminal and what escape sequences to use
+// if we wanted to support more terminals, not only VT100
 void editor_refresh_screen()
 {
     struct append_buf ab = { nullptr, 0 };
@@ -144,19 +153,8 @@ void editor_refresh_screen()
     // hide cursor while refreshing
     ab_append(&ab, "\x1b[?25l", 6);
 
-    // first byte - `\x1b` - is an escape character (27)
-    // escape sequence starts with an escape character followed by a '[' character
-    // --
-    // https://vt100.net/docs/vt100-ug/chapter3.html#ED
-    // `ESC [ Ps J` - erase some or all of the characters in the display
-    // Ps = 0, erase from the active position to the end of the screen (inclusive)
-    // Ps = 1, erase from the start of the screen to the active position (inclusive)
-    // PS = 2, erase all of the display (all lines are erased, changed to single-width, and the cursor does not move)
-    // --
-    // we could use ncurses lib, which uses terminfo db to figure out the capabilities of a terminal and what escape sequences to use
-    // if we wanted to support more terminals, not only VT100
-    ab_append(&ab, "\x1b[2J", 4);
-    ab_append(&ab, "\x1b[H", 3); // move cursor to the top-left corner (home position)
+    // move cursor to the top-left corner (home position)
+    ab_append(&ab, "\x1b[H", 3);
 
     editor_draw_rows(&ab);
 
