@@ -2,6 +2,7 @@
 #include <errno.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <sys/ioctl.h>
 #include <termios.h>
 #include <unistd.h>
@@ -38,7 +39,7 @@ void disable_raw_mode(void)
     }
 }
 
-// disable echoing and some signals
+// disable echoing and some other signals
 // canonicalize input lines (input bytes are not assembled into lines)
 // termios(4)
 void enable_raw_mode(void)
@@ -80,9 +81,9 @@ char editor_read_key()
     return c;
 }
 
-int get_window_size(int* rows, int* cols)
+int get_window_size(int *rows, int *cols)
 {
-    struct winsize ws;
+    struct winsize ws = { 0 };
 
     if (ioctl(STDOUT_FILENO, TIOCGWINSZ, &ws) == -1 || ws.ws_col == 0)
     {
@@ -96,22 +97,49 @@ int get_window_size(int* rows, int* cols)
     }
 }
 
+/*** APPEND BUFFER ***/
+struct append_buf
+{
+    char *b;
+    int len;
+};
+
+void ab_append(struct append_buf *ab, const char *s, int len)
+{
+    char *new_buf = realloc(ab->b, ab->len + len);
+
+    if (new_buf == NULL)
+    {
+        return;
+    }
+
+    memcpy(&new_buf[ab->len], s, len);
+    ab->b = new_buf;
+    ab->len += len;
+}
+
+void ab_free(struct append_buf *ab)
+{
+    free(ab->b);
+}
+
 /*** OUTPUT ***/
-void editor_draw_rows()
+void editor_draw_rows(struct append_buf *ab)
 {
     for (int y = 0; y < EDITOR_CONF.screenrows; ++y)
     {
-        write(STDOUT_FILENO, "~", 1);
+        ab_append(ab, "~", 1);
 
         if (y < EDITOR_CONF.screenrows - 1)
         {
-            write(STDOUT_FILENO, "\r\n", 2);
+            ab_append(ab, "\r\n", 2);
         }
     }
 }
 
 void editor_refresh_screen()
 {
+    struct append_buf ab = { nullptr, 0 };
     // first byte - `\x1b` - is an escape character (27)
     // escape sequence starts with an escape character followed by a '[' character
     // --
@@ -123,11 +151,15 @@ void editor_refresh_screen()
     // --
     // we could use ncurses lib, which uses terminfo db to figure out the capabilities of a terminal and what escape sequences to use
     // if we wanted to support more terminals, not only VT100
-    write(STDOUT_FILENO, "\x1b[2J", 4);
-    write(STDOUT_FILENO, "\x1b[H", 3); // move cursor to the top-left corner (home position)
+    ab_append(&ab, "\x1b[2J", 4);
+    ab_append(&ab, "\x1b[H", 3); // move cursor to the top-left corner (home position)
 
-    editor_draw_rows();
-    write(STDOUT_FILENO, "\x1b[H", 3);
+    editor_draw_rows(&ab);
+
+    ab_append(&ab, "\x1b[H", 3);
+
+    write(STDOUT_FILENO, ab.b, ab.len);
+    ab_free(&ab);
 }
 
 /*** INPUT ***/
