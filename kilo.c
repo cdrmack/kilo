@@ -8,6 +8,8 @@
 #include <unistd.h>
 
 /*** DEFINES ***/
+#define KILO_VERSION "0.0.1"
+
 #define CTRL_KEY(k) ((k) & 0x1f) // 0001 1111
 
 /*** DATA ***/
@@ -124,11 +126,42 @@ void ab_free(struct append_buf *ab)
 }
 
 /*** OUTPUT ***/
+void editor_draw_welcome_message(struct append_buf *ab)
+{
+    char welcome[80];
+    int welcome_len = snprintf(welcome, sizeof(welcome), "Kilo editor -- version %s", KILO_VERSION);
+    if (welcome_len > EDITOR_CONF.screencols)
+    {
+        welcome_len = EDITOR_CONF.screencols;
+    }
+
+    int padding = (EDITOR_CONF.screencols - welcome_len) / 2;
+    if (padding)
+    {
+        ab_append(ab, "~", 1);
+        padding--;
+    }
+
+    while (padding--)
+    {
+        ab_append(ab, " ", 1);
+    }
+
+    ab_append(ab, welcome, welcome_len);
+}
+
 void editor_draw_rows(struct append_buf *ab)
 {
     for (int y = 0; y < EDITOR_CONF.screenrows; ++y)
     {
-        ab_append(ab, "~", 1);
+        if (y == EDITOR_CONF.screenrows / 3)
+        {
+            editor_draw_welcome_message(ab);
+        }
+        else
+        {
+            ab_append(ab, "~", 1);
+        }
 
         // erase from the active position to the end of the line
         ab_append(ab, "\x1b[K", 3);
