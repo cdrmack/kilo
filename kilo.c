@@ -193,7 +193,8 @@ void editor_refresh_screen()
 
     editor_draw_rows(&ab);
 
-    // cursor's position
+    // Cursor Position
+    // ESC [ Pn ; Pn H
     char buf[32];
     snprintf(buf, sizeof(buf), "\x1b[%d;%dH", EDITOR_CONF.c_y + 1, EDITOR_CONF.c_x + 1);
     ab_append(&ab, buf, strlen(buf));
@@ -206,6 +207,27 @@ void editor_refresh_screen()
 }
 
 /*** INPUT ***/
+void editor_move_cursor(char key)
+{
+    switch (key)
+    {
+        case 'h':
+            EDITOR_CONF.c_x--;
+            break;
+        case 'l':
+            EDITOR_CONF.c_x++;
+            break;
+        case 'k':
+            EDITOR_CONF.c_y--;
+            break;
+        case 'j':
+            EDITOR_CONF.c_y++;
+            break;
+        default:
+            break;
+    }
+}
+
 void editor_process_keypress()
 {
     const char key = editor_read_key();
@@ -219,6 +241,12 @@ void editor_process_keypress()
             exit(EXIT_SUCCESS);
             break;
         }
+        case 'h':
+        case 'j':
+        case 'k':
+        case 'l':
+            editor_move_cursor(key);
+            break;
         default:
             break;
     }
