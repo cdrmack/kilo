@@ -14,6 +14,8 @@
 
 /*** DATA ***/
 struct editor_config {
+    int c_x; // cursor's x position
+    int c_y; // cursor's y position
     int screenrows;
     int screencols;
     struct termios original_termios;
@@ -191,7 +193,10 @@ void editor_refresh_screen()
 
     editor_draw_rows(&ab);
 
-    ab_append(&ab, "\x1b[H", 3);
+    // cursor's position
+    char buf[32];
+    snprintf(buf, sizeof(buf), "\x1b[%d;%dH", EDITOR_CONF.c_y + 1, EDITOR_CONF.c_x + 1);
+    ab_append(&ab, buf, strlen(buf));
 
     // show cursor
     ab_append(&ab, "\x1b[?25h", 6);
@@ -222,6 +227,9 @@ void editor_process_keypress()
 /*** INIT ***/
 void init_editor()
 {
+    EDITOR_CONF.c_x = 0;
+    EDITOR_CONF.c_y = 0;
+
     if (get_window_size(&EDITOR_CONF.screenrows, &EDITOR_CONF.screencols) == -1)
     {
         die("get_window_size");
