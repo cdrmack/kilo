@@ -12,6 +12,14 @@
 
 #define CTRL_KEY(k) ((k) & 0x1f) // 0001 1111
 
+enum editor_key
+{
+    ARROW_LEFT = 1000,
+    ARROW_RIGHT,
+    ARROW_UP,
+    ARROW_DOWN
+};
+
 /*** DATA ***/
 struct editor_config {
     int c_x; // cursor's x position
@@ -69,7 +77,7 @@ void enable_raw_mode(void)
     }
 }
 
-char editor_read_key()
+int editor_read_key()
 {
     ssize_t nread = 0;
     char c = '\0';
@@ -82,43 +90,40 @@ char editor_read_key()
         }
     }
 
-    if (c == '\x1b')
-    {
-        char seq[2];
-
-        if (read(STDIN_FILENO, &seq[0], 1) != 1)
-        {
-            return '\x1b';
-        }
-
-        if (read(STDIN_FILENO, &seq[1], 1) != 1)
-        {
-            return '\x1b';
-        }
-
-        if (seq[0] == '[')
-        {
-            switch (seq[1])
-            {
-                // "\x1bA" is left arrow
-                case 'A':
-                    return 'k';
-                case 'B':
-                    return 'j';
-                case 'C':
-                    return 'l';
-                case 'D':
-                    return 'h';
-                default:
-                    return '\x1b';
-            }
-        }
-        return '\x1b';
-    }
-    else
+    if (c != '\x1b')
     {
         return c;
     }
+
+    char seq[2];
+
+    if (read(STDIN_FILENO, &seq[0], 1) != 1)
+    {
+        return '\x1b';
+    }
+
+    if (read(STDIN_FILENO, &seq[1], 1) != 1)
+    {
+        return '\x1b';
+    }
+
+    if (seq[0] == '[')
+    {
+        switch (seq[1])
+        {
+            case 'A':
+                return ARROW_UP;
+            case 'B':
+                return ARROW_DOWN;
+            case 'C':
+                return ARROW_RIGHT;
+            case 'D':
+                return ARROW_LEFT;
+            default:
+                return '\x1b';
+        }
+    }
+    return '\x1b';
 }
 
 int get_window_size(int *rows, int *cols)
@@ -243,20 +248,20 @@ void editor_refresh_screen()
 }
 
 /*** INPUT ***/
-void editor_move_cursor(char key)
+void editor_move_cursor(int key)
 {
     switch (key)
     {
-        case 'h':
+        case ARROW_LEFT:
             EDITOR_CONF.c_x--;
             break;
-        case 'l':
+        case ARROW_RIGHT:
             EDITOR_CONF.c_x++;
             break;
-        case 'k':
+        case ARROW_UP:
             EDITOR_CONF.c_y--;
             break;
-        case 'j':
+        case ARROW_DOWN:
             EDITOR_CONF.c_y++;
             break;
         default:
@@ -266,7 +271,7 @@ void editor_move_cursor(char key)
 
 void editor_process_keypress()
 {
-    const char key = editor_read_key();
+    const int key = editor_read_key();
 
     switch (key)
     {
@@ -277,10 +282,10 @@ void editor_process_keypress()
             exit(EXIT_SUCCESS);
             break;
         }
-        case 'h':
-        case 'j':
-        case 'k':
-        case 'l':
+        case ARROW_UP:
+        case ARROW_DOWN:
+        case ARROW_LEFT:
+        case ARROW_RIGHT:
             editor_move_cursor(key);
             break;
         default:
