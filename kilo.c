@@ -82,7 +82,43 @@ char editor_read_key()
         }
     }
 
-    return c;
+    if (c == '\x1b')
+    {
+        char seq[2];
+
+        if (read(STDIN_FILENO, &seq[0], 1) != 1)
+        {
+            return '\x1b';
+        }
+
+        if (read(STDIN_FILENO, &seq[1], 1) != 1)
+        {
+            return '\x1b';
+        }
+
+        if (seq[0] == '[')
+        {
+            switch (seq[1])
+            {
+                // "\x1bA" is left arrow
+                case 'A':
+                    return 'k';
+                case 'B':
+                    return 'j';
+                case 'C':
+                    return 'l';
+                case 'D':
+                    return 'h';
+                default:
+                    return '\x1b';
+            }
+        }
+        return '\x1b';
+    }
+    else
+    {
+        return c;
+    }
 }
 
 int get_window_size(int *rows, int *cols)
