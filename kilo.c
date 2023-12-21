@@ -21,7 +21,8 @@ enum editor_key
 };
 
 /*** DATA ***/
-struct editor_config {
+struct editor_config
+{
     int c_x; // cursor's x position
     int c_y; // cursor's y position
     int screenrows;
@@ -32,7 +33,7 @@ struct editor_config {
 struct editor_config EDITOR_CONF;
 
 /*** TERMINAL ***/
-void die(const char* s)
+void die(const char *s)
 {
     write(STDOUT_FILENO, "\x1b[2J", 4);
     write(STDOUT_FILENO, "\x1b[H", 3);
@@ -77,7 +78,7 @@ void enable_raw_mode(void)
     }
 }
 
-int editor_read_key()
+int editor_read_key(void)
 {
     ssize_t nread = 0;
     char c = '\0';
@@ -222,7 +223,7 @@ void editor_draw_rows(struct append_buf *ab)
 // ---
 // we could use ncurses lib, which uses terminfo db to figure out the capabilities of a terminal and what escape sequences to use
 // if we wanted to support more terminals, not only VT100
-void editor_refresh_screen()
+void editor_refresh_screen(void)
 {
     struct append_buf ab = { nullptr, 0 };
 
@@ -253,23 +254,35 @@ void editor_move_cursor(int key)
     switch (key)
     {
         case ARROW_LEFT:
-            EDITOR_CONF.c_x--;
+            if (EDITOR_CONF.c_x != 0)
+            {
+                EDITOR_CONF.c_x--;
+            }
             break;
         case ARROW_RIGHT:
-            EDITOR_CONF.c_x++;
+            if (EDITOR_CONF.c_x != EDITOR_CONF.screencols - 1)
+            {
+                EDITOR_CONF.c_x++;
+            }
             break;
         case ARROW_UP:
-            EDITOR_CONF.c_y--;
+            if (EDITOR_CONF.c_y != 0)
+            {
+                EDITOR_CONF.c_y--;
+            }
             break;
         case ARROW_DOWN:
-            EDITOR_CONF.c_y++;
+            if (EDITOR_CONF.c_y != EDITOR_CONF.screenrows - 1)
+            {
+                EDITOR_CONF.c_y++;
+            }
             break;
         default:
             break;
     }
 }
 
-void editor_process_keypress()
+void editor_process_keypress(void)
 {
     const int key = editor_read_key();
 
@@ -294,7 +307,7 @@ void editor_process_keypress()
 }
 
 /*** INIT ***/
-void init_editor()
+void init_editor(void)
 {
     EDITOR_CONF.c_x = 0;
     EDITOR_CONF.c_y = 0;
@@ -305,7 +318,7 @@ void init_editor()
     }
 }
 
-int main(void)
+int main()
 {
     enable_raw_mode();
     init_editor();
