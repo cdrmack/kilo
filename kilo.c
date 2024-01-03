@@ -33,7 +33,8 @@ struct editor_config
 struct editor_config EDITOR_CONF;
 
 /*** TERMINAL ***/
-void die(const char *s)
+void
+die(const char *s)
 {
     write(STDOUT_FILENO, "\x1b[2J", 4);
     write(STDOUT_FILENO, "\x1b[H", 3);
@@ -44,7 +45,8 @@ void die(const char *s)
 
 // there are two general kinds of input processing:
 // canonical (cooked) and noncanonical (raw)
-void disable_raw_mode(void)
+void
+disable_raw_mode(void)
 {
     if (tcsetattr(STDIN_FILENO, TCSAFLUSH, &EDITOR_CONF.original_termios) == -1)
     {
@@ -55,7 +57,8 @@ void disable_raw_mode(void)
 // disable echoing and some other signals
 // canonicalize input lines (input bytes are not assembled into lines)
 // termios(4)
-void enable_raw_mode(void)
+void
+enable_raw_mode(void)
 {
     if (tcgetattr(STDIN_FILENO, &EDITOR_CONF.original_termios) == -1)
     {
@@ -78,7 +81,8 @@ void enable_raw_mode(void)
     }
 }
 
-int editor_read_key(void)
+int
+editor_read_key(void)
 {
     ssize_t nread = 0;
     char c = '\0';
@@ -127,7 +131,8 @@ int editor_read_key(void)
     return '\x1b';
 }
 
-int get_window_size(int *rows, int *cols)
+int
+get_window_size(int *rows, int *cols)
 {
     struct winsize ws = { 0 };
 
@@ -150,7 +155,8 @@ struct append_buf
     int len;
 };
 
-void ab_append(struct append_buf *ab, const char *s, int len)
+void
+ab_append(struct append_buf *ab, const char *s, int len)
 {
     char *new_buf = realloc(ab->b, ab->len + len);
 
@@ -164,13 +170,15 @@ void ab_append(struct append_buf *ab, const char *s, int len)
     ab->len += len;
 }
 
-void ab_free(struct append_buf *ab)
+void
+ab_free(struct append_buf *ab)
 {
     free(ab->b);
 }
 
 /*** OUTPUT ***/
-void editor_draw_welcome_message(struct append_buf *ab)
+void
+editor_draw_welcome_message(struct append_buf *ab)
 {
     char welcome[80];
     int welcome_len = snprintf(welcome, sizeof(welcome), "Kilo editor -- version %s", KILO_VERSION);
@@ -194,7 +202,8 @@ void editor_draw_welcome_message(struct append_buf *ab)
     ab_append(ab, welcome, welcome_len);
 }
 
-void editor_draw_rows(struct append_buf *ab)
+void
+editor_draw_rows(struct append_buf *ab)
 {
     for (int y = 0; y < EDITOR_CONF.screenrows; ++y)
     {
@@ -223,7 +232,8 @@ void editor_draw_rows(struct append_buf *ab)
 // ---
 // we could use ncurses lib, which uses terminfo db to figure out the capabilities of a terminal and what escape sequences to use
 // if we wanted to support more terminals, not only VT100
-void editor_refresh_screen(void)
+void
+editor_refresh_screen(void)
 {
     struct append_buf ab = { nullptr, 0 };
 
@@ -249,7 +259,8 @@ void editor_refresh_screen(void)
 }
 
 /*** INPUT ***/
-void editor_move_cursor(int key)
+void
+editor_move_cursor(int key)
 {
     switch (key)
     {
@@ -282,7 +293,8 @@ void editor_move_cursor(int key)
     }
 }
 
-void editor_process_keypress(void)
+void
+editor_process_keypress(void)
 {
     const int key = editor_read_key();
 
@@ -307,7 +319,8 @@ void editor_process_keypress(void)
 }
 
 /*** INIT ***/
-void init_editor(void)
+void
+init_editor(void)
 {
     EDITOR_CONF.c_x = 0;
     EDITOR_CONF.c_y = 0;
@@ -318,7 +331,8 @@ void init_editor(void)
     }
 }
 
-int main()
+int
+main()
 {
     enable_raw_mode();
     init_editor();
