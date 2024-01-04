@@ -19,7 +19,9 @@ enum editor_key
     ARROW_UP,
     ARROW_DOWN,
     PAGE_UP,
-    PAGE_DOWN
+    PAGE_DOWN,
+    HOME,
+    END
 };
 
 /*** DATA ***/
@@ -127,10 +129,18 @@ editor_read_key(void)
             {
                 switch (seq[1])
                 {
+                    case '1':
+                        return HOME;
+                    case '4':
+                        return END;
                     case '5':
                         return PAGE_UP;
                     case '6':
                         return PAGE_DOWN;
+                    case '7':
+                        return HOME;
+                    case '8':
+                        return END;
                 }
             }
         }
@@ -146,11 +156,26 @@ editor_read_key(void)
                     return ARROW_RIGHT;
                 case 'D':
                     return ARROW_LEFT;
+                case 'H':
+                    return HOME;
+                case 'F':
+                    return END;
                 default:
                     return '\x1b';
             }
         }
     }
+    else if (seq[0] == 'O')
+    {
+        switch (seq[1])
+        {
+            case 'H':
+                return HOME;
+            case 'E':
+                return END;
+        }
+    }
+
     return '\x1b';
 }
 
@@ -344,6 +369,14 @@ editor_process_keypress(void)
             {
                 editor_move_cursor(key == PAGE_UP ? ARROW_UP : ARROW_DOWN);
             }
+            break;
+        }
+        case HOME:
+            EDITOR_CONF.c_x = 0;
+            break;
+        case END:
+        {
+            EDITOR_CONF.c_x = EDITOR_CONF.screencols - 1;
             break;
         }
         default:
