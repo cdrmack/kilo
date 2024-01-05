@@ -25,12 +25,20 @@ enum editor_key
 };
 
 /*** DATA ***/
+typedef struct editor_row
+{
+    int size;
+    char *chars;
+} editor_row;
+
 struct editor_config
 {
     int c_x; // cursor's x position
     int c_y; // cursor's y position
     int screenrows;
     int screencols;
+    int numrows;
+    editor_row row;
     struct termios original_termios;
 };
 
@@ -40,8 +48,8 @@ struct editor_config EDITOR_CONF;
 void
 die(const char *s)
 {
-    write(STDOUT_FILENO, "\x1b[2J", 4);
-    write(STDOUT_FILENO, "\x1b[H", 3);
+    write(STDOUT_FILENO, "\x1b[2J", 4); // erase screen
+    write(STDOUT_FILENO, "\x1b[H", 3); // move cursor to home position
 
     perror(s); // most clib function that fail will set the global errno variable, perror() prints it alongside provided text
     exit(EXIT_FAILURE);
@@ -188,12 +196,10 @@ get_window_size(int *rows, int *cols)
     {
         return -1;
     }
-    else
-    {
-        *rows = ws.ws_row;
-        *cols = ws.ws_col;
-        return 0;
-    }
+
+    *rows = ws.ws_row;
+    *cols = ws.ws_col;
+    return 0;
 }
 
 /*** APPEND BUFFER ***/
@@ -255,13 +261,26 @@ editor_draw_rows(struct append_buf *ab)
 {
     for (int y = 0; y < EDITOR_CONF.screenrows; ++y)
     {
-        if (y == EDITOR_CONF.screenrows / 3)
+        if (y >= EDITOR_CONF.numrows)
         {
-            editor_draw_welcome_message(ab);
+            if (y == EDITOR_CONF.screenrows / 3)
+            {
+                editor_draw_welcome_message(ab);
+            }
+            else
+            {
+                ab_append(ab, "~", 1);
+            }
         }
         else
         {
-            ab_append(ab, "~", 1);
+            int len = EDITOR_CONF.row.size;
+            if (len > EDITOR_CONF.screencols)
+            {
+                len = EDITOR_CONF.screencols;
+            }
+
+            ab_append(ab, EDITOR_CONF.row.chars, len);
         }
 
         // erase from the active position to the end of the line
@@ -283,7 +302,7 @@ editor_draw_rows(struct append_buf *ab)
 void
 editor_refresh_screen(void)
 {
-    struct append_buf ab = { nullptr, 0 };
+    struct append_buf ab = { 0 };
 
     // hide cursor while refreshing
     ab_append(&ab, "\x1b[?25l", 6);
@@ -304,6 +323,29 @@ editor_refresh_screen(void)
 
     write(STDOUT_FILENO, ab.b, ab.len);
     ab_free(&ab);
+}
+
+/*** FILES ***/
+void
+open_editor(void)
+{
+    char *line = "Hello World!";
+    ssize_t linelen = 13;
+
+    EDITOR_CONF.row.size = linelen;
+    EDITOR_CONF.row.chars = malloc(linelen + 1);
+    memcpy(EDITOR_CONF.row.chars, line, linelen);
+    EDITOR_CONF.row.chars[linelen] = '\0';
+    EDITOR_CONF.numrows = 1;
+}
+
+void
+close_editor(void)
+{
+    if (EDITOR_CONF.row.chars)
+    {
+        free(EDITOR_CONF.row.chars);
+    }
 }
 
 /*** INPUT ***/
@@ -352,6 +394,7 @@ editor_process_keypress(void)
         {
             write(STDOUT_FILENO, "\x1b[2J", 4);
             write(STDOUT_FILENO, "\x1b[H", 3);
+            close_editor();
             exit(EXIT_SUCCESS);
             break;
         }
@@ -390,6 +433,7 @@ init_editor(void)
 {
     EDITOR_CONF.c_x = 0;
     EDITOR_CONF.c_y = 0;
+    EDITOR_CONF.numrows = 0;
 
     if (get_window_size(&EDITOR_CONF.screenrows, &EDITOR_CONF.screencols) == -1)
     {
@@ -402,6 +446,7 @@ main()
 {
     enable_raw_mode();
     init_editor();
+    open_editor();
 
     while (1)
     {
