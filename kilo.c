@@ -327,16 +327,37 @@ editor_refresh_screen(void)
 
 /*** FILES ***/
 void
-open_editor(void)
+open_editor(char *filename)
 {
-    char *line = "Hello World!";
-    ssize_t linelen = 13;
+    FILE* fp = fopen(filename, "r");
+    if (!fp)
+    {
+        die("fopen");
+    }
 
-    EDITOR_CONF.row.size = linelen;
-    EDITOR_CONF.row.chars = malloc(linelen + 1);
-    memcpy(EDITOR_CONF.row.chars, line, linelen);
-    EDITOR_CONF.row.chars[linelen] = '\0';
-    EDITOR_CONF.numrows = 1;
+    char *line = nullptr;
+    size_t linecap = 0;
+    ssize_t linelen;
+
+    linelen = getline(&line, &linecap, fp);
+
+    if (linelen != -1)
+    {
+        while (linelen > 0 && (line[linelen - 1] == '\n' ||
+                               line[linelen - 1] == '\r'))
+        {
+            linelen--;
+        }
+
+        EDITOR_CONF.row.size = linelen;
+        EDITOR_CONF.row.chars = malloc(linelen + 1);
+        memcpy(EDITOR_CONF.row.chars, line, linelen);
+        EDITOR_CONF.row.chars[linelen] = '\0';
+        EDITOR_CONF.numrows = 1;
+    }
+
+    free(line);
+    fclose(fp);
 }
 
 void
@@ -442,11 +463,15 @@ init_editor(void)
 }
 
 int
-main()
+main(int argc, char *argv[])
 {
     enable_raw_mode();
     init_editor();
-    open_editor();
+
+    if (argc > 1)
+    {
+        open_editor(argv[1]);
+    }
 
     while (1)
     {
