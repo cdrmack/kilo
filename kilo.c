@@ -263,7 +263,7 @@ editor_draw_rows(struct append_buf *ab)
     {
         if (y >= EDITOR_CONF.numrows)
         {
-            if (y == EDITOR_CONF.screenrows / 3)
+            if (EDITOR_CONF.numrows == 0 && y == EDITOR_CONF.screenrows / 3)
             {
                 editor_draw_welcome_message(ab);
             }
