@@ -38,7 +38,7 @@ struct editor_config
     int screenrows;
     int screencols;
     int numrows;
-    editor_row row;
+    editor_row *row;
     struct termios original_termios;
 };
 
@@ -202,6 +202,20 @@ get_window_size(int *rows, int *cols)
     return 0;
 }
 
+/*** ROW OPERATIONS ***/
+void
+editor_append_row(char *s, size_t len)
+{
+    EDITOR_CONF.row = realloc(EDITOR_CONF.row, sizeof(editor_row) * (EDITOR_CONF.numrows + 1));
+
+    const int at = EDITOR_CONF.numrows;
+    EDITOR_CONF.row[at].size = len;
+    EDITOR_CONF.row[at].chars = malloc(len + 1);
+    memcpy(EDITOR_CONF.row[at].chars, s, len);
+    EDITOR_CONF.row[at].chars[len] = '\0';
+    EDITOR_CONF.numrows++;
+}
+
 /*** APPEND BUFFER ***/
 struct append_buf
 {
@@ -274,13 +288,13 @@ editor_draw_rows(struct append_buf *ab)
         }
         else
         {
-            int len = EDITOR_CONF.row.size;
+            int len = EDITOR_CONF.row[y].size;
             if (len > EDITOR_CONF.screencols)
             {
                 len = EDITOR_CONF.screencols;
             }
 
-            ab_append(ab, EDITOR_CONF.row.chars, len);
+            ab_append(ab, EDITOR_CONF.row[y].chars, len);
         }
 
         // erase from the active position to the end of the line
@@ -339,9 +353,7 @@ open_editor(char *filename)
     size_t linecap = 0;
     ssize_t linelen;
 
-    linelen = getline(&line, &linecap, fp);
-
-    if (linelen != -1)
+    while ((linelen = getline(&line, &linecap, fp)) != -1)
     {
         while (linelen > 0 && (line[linelen - 1] == '\n' ||
                                line[linelen - 1] == '\r'))
@@ -349,11 +361,7 @@ open_editor(char *filename)
             linelen--;
         }
 
-        EDITOR_CONF.row.size = linelen;
-        EDITOR_CONF.row.chars = malloc(linelen + 1);
-        memcpy(EDITOR_CONF.row.chars, line, linelen);
-        EDITOR_CONF.row.chars[linelen] = '\0';
-        EDITOR_CONF.numrows = 1;
+        editor_append_row(line, linelen);
     }
 
     free(line);
@@ -363,9 +371,9 @@ open_editor(char *filename)
 void
 close_editor(void)
 {
-    if (EDITOR_CONF.row.chars)
+    if (EDITOR_CONF.row && EDITOR_CONF.row->chars)
     {
-        free(EDITOR_CONF.row.chars);
+        free(EDITOR_CONF.row->chars);
     }
 }
 
@@ -455,6 +463,7 @@ init_editor(void)
     EDITOR_CONF.c_x = 0;
     EDITOR_CONF.c_y = 0;
     EDITOR_CONF.numrows = 0;
+    EDITOR_CONF.row = nullptr;
 
     if (get_window_size(&EDITOR_CONF.screenrows, &EDITOR_CONF.screencols) == -1)
     {
